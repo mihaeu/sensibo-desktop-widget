@@ -1,14 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net10.0-windows</TargetFramework>
+    <TargetFramework>net11.0-windows</TargetFramework>
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>disable</ImplicitUsings>
     <AssemblyName>SensiboWidget</AssemblyName>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
-    <RuntimeFrameworkVersion>10.0.15</RuntimeFrameworkVersion>
+    <RuntimeFrameworkVersion>11.0.0</RuntimeFrameworkVersion>
     <SelfContained>true</SelfContained>
     <PublishSingleFile>true</PublishSingleFile>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
@@ -18,4 +18,14 @@
     <NoWarn>$(NoWarn);WFO0003</NoWarn>
   </PropertyGroup>
   <ItemGroup><ProjectReference Include="../SensiboWidget.Core/SensiboWidget.Core.csproj" /></ItemGroup>
+  <!-- .NET 11 WPF mixed-mode assemblies must load from disk beside their native host.
+       Remove this workaround once https://github.com/dotnet/wpf/issues/11842 is fixed. -->
+  <Target Name="KeepWpfMixedModeLibrariesOnDisk" AfterTargets="ComputeResolvedFilesToPublishList"
+          Condition="'$(PublishSingleFile)' == 'true'">
+    <ItemGroup>
+      <ResolvedFileToPublish Update="@(ResolvedFileToPublish)"
+          Condition="'%(Filename)%(Extension)' == 'DirectWriteForwarder.dll' or '%(Filename)%(Extension)' == 'System.Printing.dll' or '%(Filename)%(Extension)' == 'ijwhost.dll'"
+          ExcludeFromSingleFile="true" />
+    </ItemGroup>
+  </Target>
 </Project>

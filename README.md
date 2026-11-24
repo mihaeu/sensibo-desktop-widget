@@ -32,18 +32,24 @@ The native WPF layout with sample readings, shown at its default size.
 
 - Windows 11 x64 (Windows 10 x64 may work but is not the primary test target).
 - A Sensibo account and an internet connection. Air Pro identifies itself as `airq`.
-- To build: **.NET SDK 10.0.404**, pinned in `global.json`. No Visual Studio installation is required.
-- To run the published app: no separate .NET installation. The self-contained executable includes runtime **10.0.15**.
+- To build: **.NET SDK 11.0.100**, pinned in `global.json`. No Visual Studio installation is required.
+- To run the published app: no separate .NET installation. The self-contained app includes runtime **11.0.0**.
 
 ## Build and check
 
-Install SDK 10.0.404 from the [official .NET 10 download page](https://dotnet.microsoft.com/en-us/download/dotnet/10.0). From the repository root, run:
+Install SDK 11.0.100 from the [official .NET 11 download page](https://dotnet.microsoft.com/en-us/download/dotnet/11.0). From the repository root, run:
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\build.ps1
 ```
 
-The script verifies the exact SDK, restores with checked-in dependency lock files, builds Release with warnings treated as errors, runs the offline checks, and publishes to `artifacts/publish`. The first restore requires access to NuGet to download the pinned Windows runtime packs. There are no third-party packages.
+If the SDK is installed in a separate directory, pass its executable explicitly without changing your system PATH:
+
+```powershell
+.\scripts\build.ps1 -DotnetPath "$env:LOCALAPPDATA\Microsoft\dotnet11\dotnet.exe"
+```
+
+The script verifies the exact SDK, restores with checked-in dependency lock files, builds Release with warnings treated as errors, runs the offline checks, and publishes to `artifacts/publish`. The first restore requires access to NuGet to download the pinned Windows runtime packs. There are no third-party packages. Keep the entire publish folder together: three WPF runtime DLLs must remain beside the executable to work around a [.NET 11 startup bug](https://github.com/dotnet/wpf/issues/11842). The installer copies these files automatically.
 
 Build inputs are pinned by `global.json`, the runtime version in the app project, `NuGet.config`, and `packages.lock.json`. Deterministic compilation and normalized source paths are enabled; automatic Git-dependent source embedding and revision attributes are disabled so a source archive builds the same as a checkout. An independent rebuild from a second directory produced an identical executable; see `VALIDATION.md`. `artifacts/SHA256SUMS.txt` records the executable hash. Do not edit generated outputs. When intentionally updating the SDK/runtime, update their pins, run `dotnet restore SensiboDesktopWidget.slnx --force-evaluate`, review the lock-file changes, then rerun the build script.
 
