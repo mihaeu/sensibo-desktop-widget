@@ -1,6 +1,15 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/logo-dark.png">
+    <img src="docs/assets/logo.png" alt="Sensibo Desktop Widget" width="480">
+  </picture>
+</p>
+
+> A small, always-on-top Windows widget showing temperature, humidity, TVOC, and estimated CO₂. The temperature-first layout is 176 × 176 device-independent pixels by default, with rounded corners and light, dark, or system appearance.
+
 ## Table of contents
 
-- [Screenshot or Demo](#screenshot-or-demo)
+- [Screenshot](#screenshot)
 - [Requirements](#requirements)
 - [Build and check](#build-and-check)
 - [Install for the current Windows user](#install-for-the-current-windows-user)
@@ -11,18 +20,7 @@
 - [Uninstall](#uninstall)
 - [Manual acceptance checks](#manual-acceptance-checks)
 
-<p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/logo-dark.png">
-    <img src="docs/assets/logo.png" alt="Sensibo Desktop Widget" width="480">
-  </picture>
-</p>
-
-# Sensibo Desktop Widget
-
-A small, always-on-top Windows widget showing temperature, humidity, TVOC, and estimated CO₂. The temperature-first layout is 176 × 176 device-independent pixels by default, with rounded corners and light, dark, or system appearance.
-
-## Screenshot or Demo
+## Screenshot
 
 <img src="docs/assets/widget-demo.png" alt="Temperature-first widget showing 20.3 degrees Celsius, 69.3 percent humidity, 519 ppb TVOC, and 967 ppm estimated CO2" width="176" height="176">
 
@@ -142,3 +140,7 @@ Alternatively, run the copy in `%LOCALAPPDATA%\Programs\SensiboDesktopWidget\uni
 ## Manual acceptance checks
 
 Use a real account to verify initial readings and changes; disconnect and reconnect the network; move the widget among all monitors with their actual DPI settings; restart it to verify position; disconnect the saved monitor to verify recovery; and sign out/in to verify automatic startup. Offline checks cannot establish these environmental behaviors.
+
+---
+
+> **AI disclosure:** This entire project, including its code, documentation, and logo, was generated using artificial intelligence under human direction.
