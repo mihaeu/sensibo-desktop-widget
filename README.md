@@ -19,12 +19,22 @@
 - [Code layout](#code-layout)
 - [Uninstall](#uninstall)
 - [Manual acceptance checks](#manual-acceptance-checks)
+- [AI disclosure](#ai-disclosure)
 
 ## Screenshot
 
-<img src="docs/assets/widget-demo.png" alt="Temperature-first widget showing 20.3 degrees Celsius, 69.3 percent humidity, 519 ppb TVOC, and 967 ppm estimated CO2" width="176" height="176">
+<table>
+  <tr>
+    <td align="center" valign="middle"><img src="docs/assets/widget-demo.png" alt="Temperature-first widget showing 20.3 degrees Celsius, 69.3 percent humidity, 519 ppb TVOC, and 967 ppm estimated CO2" width="176" height="176"></td>
+    <td align="center" valign="middle"><img src="docs/assets/settings-demo.png" alt="Configuration view with a masked sample API key, Living room device, dark appearance, default size, and startup enabled" width="420" height="532"></td>
+  </tr>
+  <tr>
+    <td align="center">Desktop widget — sample readings.</td>
+    <td align="center">Configuration — sample data.</td>
+  </tr>
+</table>
 
-The native WPF layout with sample readings, shown at its default size.
+Both images are rendered from the native WPF layouts.
 
 ## Requirements
 
@@ -141,6 +151,6 @@ Alternatively, run the copy in `%LOCALAPPDATA%\Programs\SensiboDesktopWidget\uni
 
 Use a real account to verify initial readings and changes; disconnect and reconnect the network; move the widget among all monitors with their actual DPI settings; restart it to verify position; disconnect the saved monitor to verify recovery; and sign out/in to verify automatic startup. Offline checks cannot establish these environmental behaviors.
 
----
+## AI disclosure
 
-> **AI disclosure:** This entire project, including its code, documentation, and logo, was generated using artificial intelligence under human direction.
+This entire project, including its code, documentation, and logo, was generated using artificial intelligence under human direction.
