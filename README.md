@@ -1,6 +1,32 @@
+## Table of contents
+
+- [Screenshot or Demo](#screenshot-or-demo)
+- [Requirements](#requirements)
+- [Build and check](#build-and-check)
+- [Install for the current Windows user](#install-for-the-current-windows-user)
+- [First connection](#first-connection)
+- [Use](#use)
+- [Network behavior](#network-behavior)
+- [Code layout](#code-layout)
+- [Uninstall](#uninstall)
+- [Manual acceptance checks](#manual-acceptance-checks)
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/logo-dark.png">
+    <img src="docs/assets/logo.png" alt="Sensibo Desktop Widget" width="480">
+  </picture>
+</p>
+
 # Sensibo Desktop Widget
 
 A small, always-on-top Windows widget showing temperature, humidity, TVOC, and estimated CO₂. The temperature-first layout is 176 × 176 device-independent pixels by default, with rounded corners and light, dark, or system appearance.
+
+## Screenshot or Demo
+
+<img src="docs/assets/widget-demo.png" alt="Temperature-first widget showing 20.3 degrees Celsius, 69.3 percent humidity, 519 ppb TVOC, and 967 ppm estimated CO2" width="176" height="176">
+
+The native WPF layout with sample readings, shown at its default size.
 
 ## Requirements
 
