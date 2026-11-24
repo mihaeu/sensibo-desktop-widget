@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="src/SensiboWidget.Core/SensiboWidget.Core.csproj" />
+  <Project Path="src/SensiboWidget/SensiboWidget.csproj" />
+  <Project Path="tests/SensiboWidget.Tests/SensiboWidget.Tests.csproj" />
+</Solution>
