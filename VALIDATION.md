@@ -1,5 +1,37 @@
 # Validation
 
+## Spacing refinement
+
+Validated on 2026-11-26. The content now has equal outer padding and content-sized rows separated by equal flexible gaps, with dividers centered in each gap. The temperature row remains taller than the other two rows.
+
+- Native WPF layout measurements at 240 pixels: 14 pixels of padding on all four sides, and two equal gaps of approximately 32.68 pixels. Equal padding and gaps were also verified at 272, 296, and 320 pixels.
+- The sample image was regenerated and inspected. Release build and publish succeeded with zero warnings or errors; all 41 checks passed.
+- The installed executable matches the build and remained running after restart. The startup preference was preserved. Interactive monitor movement and Windows sign-in were not retested.
+
+SHA-256 of the published and installed executable after the spacing refinement:
+
+```text
+716E4E4FC67D3D4FB1F8BF55B052117E4E9C255A02212AD110A307A7F7E3D2C9
+```
+
+## Barcelona weather and Room first layout
+
+Validated on 2026-11-26 on Windows x64 with SDK 11.0.100 and runtime 11.0.0.
+
+- Release build and publish completed with zero warnings and errors. All 41 offline checks passed, including independent 15-minute/hourly schedules, rate limits, missing and malformed data, cancellation, Barcelona midnight, and both daylight-saving transitions.
+- The optional `--weather-live` check returned the Barcelona outside temperature, sea surface temperature, and all three forecast periods through the actual weather client, without a Sensibo key.
+- The published app started in offline demo mode and remained running for five seconds without standard-error output.
+- A second build in the repository produced the same executable as the independent source copy.
+- The installed widget was updated and restarted. The installed executable and all three runtime DLLs match the publish output; the existing startup preference was preserved. The updated process remained running after launch.
+- The README images were regenerated from the native WPF layouts with sample data. The widget image was inspected for readable values, Celsius units, and forecast glyphs.
+- Weather is model data. The live endpoint check does not validate accuracy against a Barcelona thermometer or a sea sensor. Multi-monitor and sign-in behavior still need an interactive acceptance check.
+
+SHA-256 of the published executable:
+
+```text
+274CFB95FE109CABB3351F870B56B32F56929C1E44E97516BD0F1F07D6E1D8CB
+```
+
 ## .NET 11 upgrade
 
 Validated on 2026-11-24 on Windows x64 with .NET SDK 11.0.100 and the pinned self-contained runtime 11.0.0.
@@ -8,7 +40,7 @@ Validated on 2026-11-24 on Windows x64 with .NET SDK 11.0.100 and the pinned sel
 - A fresh source copy in another directory produced a byte-identical executable and all three accompanying runtime DLLs.
 - The published executable started in sample-data mode and remained running for five seconds with no standard-error output. This checks native WPF startup, not live connectivity or visual behavior.
 - The initial single-file publish crashed before opening WPF. The project now keeps `DirectWriteForwarder.dll`, `System.Printing.dll`, and `ijwhost.dll` beside the executable to work around [dotnet/wpf#11842](https://github.com/dotnet/wpf/issues/11842). Keep these files with the executable; the installer copies the whole publish folder.
-- The upgrade has not been installed over the existing desktop installation. Quit the installed widget and rerun `scripts/install.ps1 -Launch` after building to update it.
+- At this stage the .NET 11 upgrade was built but not installed. The later Barcelona weather validation above includes installation of the updated .NET 11 app.
 
 SHA-256 values verified against the independent rebuild:
 

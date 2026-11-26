@@ -1,5 +1,8 @@
 using System.Globalization;
+using System.Diagnostics;
 using System.Windows;
+using System.Windows.Automation;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
@@ -17,6 +20,9 @@ public partial class MainWindow : Window
     private readonly Forms.NotifyIcon tray;
     private readonly DispatcherTimer clock;
     private readonly SemaphoreSlim monitorGate = new(1, 1);
+    private readonly WeatherClient weather = new();
+    private readonly CancellationTokenSource weatherLifetime = new();
+    private Task weatherTask = Task.CompletedTask;
     private WidgetSettings settings;
     private CancellationTokenSource? monitoring;
     private Task? monitorTask;
@@ -39,11 +45,16 @@ public partial class MainWindow : Window
         menu.Items.Add("Quit", null, (_, _) => Dispatcher.Invoke(Exit));
         tray.ContextMenuStrip = menu;
         tray.DoubleClick += (_, _) => Dispatcher.Invoke(Show);
-        clock = new DispatcherTimer(TimeSpan.FromSeconds(30), DispatcherPriority.Background, (_, _) => RefreshReadings(), Dispatcher);
+        clock = new DispatcherTimer(TimeSpan.FromSeconds(30), DispatcherPriority.Background, (_, _) =>
+        {
+            RefreshReadings();
+            if (!demo && !exiting && weatherTask.IsCompleted) weatherTask = RefreshWeatherAsync();
+        }, Dispatcher);
         SystemEvents.UserPreferenceChanged += ThemeChanged;
         Loaded += async (_, _) =>
         {
             MonitorPosition.Restore(this, settings.Position);
+            if (!demo) weatherTask = RefreshWeatherAsync();
             if (demo)
             {
                 latest = new(new("demo", "Demo preview", "airq", new(20.3, 69.3, 519, 967, DateTimeOffset.UtcNow), true), true, "Sample readings — demo mode");
@@ -106,12 +117,77 @@ public partial class MainWindow : Window
         TvocText.Text = Format(readings?.Tvoc, "0");
         Co2Text.Text = Format(readings?.Co2, "0");
         var old = readings?.MeasuredAt is not { } stamp || DateTimeOffset.UtcNow - stamp > TimeSpan.FromMinutes(15);
-        var warning = !latest.Connected || latest.Device?.Online == false || old;
+        var weatherWarning = RefreshWeatherReadings();
+        var warning = !latest.Connected || latest.Device?.Online == false || old || weatherWarning;
         StatusDot.Visibility = warning || demo ? Visibility.Visible : Visibility.Collapsed;
         var age = readings?.MeasuredAt?.ToLocalTime().ToString("g", CultureInfo.CurrentCulture) ?? "not received";
         var status = latest.Device?.Online == false ? "Device offline" : latest.Message;
         if (old && readings?.MeasuredAt is not null) status += "\nMeasurement is over 15 minutes old.";
-        SurfaceBorder.ToolTip = $"{latest.Device?.Name ?? "Sensibo"}\n{status}\nLast measurement: {age}\neCO₂ is estimated from TVOC.\nDrag to move · Right-click for settings";
+        if (weatherWarning) status += "\nSome weather data is unavailable or outdated. Hover each value for details.";
+        SurfaceBorder.ToolTip = $"{latest.Device?.Name ?? "Sensibo"}\n{status}\nLast measurement: {age}\neCO₂ is estimated from TVOC.\nWeather: Open-Meteo (CC BY 4.0).\nDrag to move · Right-click for settings";
+    }
+
+    private async Task RefreshWeatherAsync()
+    {
+        try
+        {
+            await weather.RefreshAsync(DateTimeOffset.UtcNow, weatherLifetime.Token);
+            if (!exiting) RefreshReadings();
+        }
+        catch (OperationCanceledException) when (weatherLifetime.IsCancellationRequested) { }
+    }
+
+    private bool RefreshWeatherReadings()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var conditions = weather.Weather.Value;
+        var sea = weather.Sea.Value;
+        if (demo)
+        {
+            var date = TimeZoneInfo.ConvertTime(now, WeatherConditions.BarcelonaZone).Date;
+            ForecastPoint Point(int hour, double temperature, int code, bool day)
+            {
+                var local = date.AddHours(hour);
+                return new(new DateTimeOffset(local, WeatherConditions.BarcelonaZone.GetUtcOffset(local)), temperature, code, day);
+            }
+            conditions = new(new(15.8, now), [Point(8, 14, 1, true), Point(12, 18, 0, true), Point(21, 13, 0, false)]);
+            sea = new(18.1, now);
+        }
+        var outsideOld = !demo && (weather.Weather.IsStale(now, WeatherClient.OutsideInterval)
+            || conditions is null || now - conditions.Outside.ValidAt > WeatherClient.OutsideInterval * 2);
+        var seaOld = !demo && (weather.Sea.IsStale(now, WeatherClient.SeaInterval)
+            || sea is null || now - sea.ValidAt > WeatherClient.SeaInterval * 2);
+        OutsideText.Text = Format(conditions?.Outside.Celsius, "0.0");
+        SeaText.Text = Format(sea?.Celsius, "0.0");
+        OutsideText.Opacity = outsideOld ? 0.6 : 1;
+        SeaText.Opacity = seaOld ? 0.6 : 1;
+        OutsidePanel.ToolTip = WeatherTip("Barcelona outside air · model estimate", conditions?.Outside, weather.Weather.FetchedAt, outsideOld, "15 minutes");
+        SeaPanel.ToolTip = WeatherTip("Barcelona coast · sea surface model estimate", sea, weather.Sea.FetchedAt, seaOld, "1 hour");
+        var morningMissing = ShowForecast(MorningPanel, MorningIcon, MorningText, conditions?.ForToday(8, now), "Morning", 8, outsideOld, now);
+        var noonMissing = ShowForecast(NoonPanel, NoonIcon, NoonText, conditions?.ForToday(12, now), "Noon", 12, outsideOld, now);
+        var nightMissing = ShowForecast(NightPanel, NightIcon, NightText, conditions?.ForToday(21, now), "Night", 21, outsideOld, now);
+        return outsideOld || seaOld || conditions?.Outside.Celsius is null || sea?.Celsius is null || morningMissing || noonMissing || nightMissing;
+    }
+
+    private string WeatherTip(string label, TemperatureSample? sample, DateTimeOffset? fetched, bool old, string interval)
+    {
+        static string Time(DateTimeOffset? time) => time is { } value
+            ? TimeZoneInfo.ConvertTime(value, WeatherConditions.BarcelonaZone).ToString("dd MMM HH:mm", CultureInfo.InvariantCulture) : "not received";
+        return $"{label}\n{(demo ? "Sample data — demo mode" : old ? "Unavailable or outdated; last value retained." : "Open-Meteo · CC BY 4.0")}\nValid at: {Time(sample?.ValidAt)} · Barcelona time\nFetched: {Time(demo ? DateTimeOffset.UtcNow : fetched)}\nRefresh: every {interval}{(sample?.Celsius is null ? "\nTemperature unavailable." : "")}";
+    }
+
+    private bool ShowForecast(StackPanel panel, TextBlock icon, TextBlock temperature, ForecastPoint? point,
+        string label, int hour, bool old, DateTimeOffset now)
+    {
+        var description = WeatherConditions.Describe(point?.Code, point?.IsDay);
+        icon.Text = description.Icon;
+        temperature.Text = Format(point?.Celsius, "0");
+        panel.Opacity = old ? 0.6 : 1;
+        var date = TimeZoneInfo.ConvertTime(now, WeatherConditions.BarcelonaZone).ToString("dd MMM yyyy", CultureInfo.InvariantCulture);
+        var text = $"{label} · {date}, {hour:00}:00 Barcelona time\n{description.Description} · {Format(point?.Celsius, "0")} °C\n{(demo ? "Sample forecast — demo mode" : old ? "Forecast may be outdated." : "Weather forecast by Open-Meteo · CC BY 4.0")}";
+        panel.ToolTip = text;
+        AutomationProperties.SetName(panel, text);
+        return point?.Celsius is null || point.Code is null;
     }
 
     private static string Format(double? value, string format) => value?.ToString(format, CultureInfo.InvariantCulture) ?? "—";
@@ -177,6 +253,12 @@ public partial class MainWindow : Window
 
     private void OpenSettings(object sender, RoutedEventArgs e) => ShowSettings();
     private async void Reconnect(object sender, RoutedEventArgs e) => await StartMonitoringAsync();
+    private void OpenWeatherSource(object sender, RoutedEventArgs e)
+    {
+        try { Process.Start(new ProcessStartInfo("https://open-meteo.com/") { UseShellExecute = true }); }
+        catch (System.ComponentModel.Win32Exception)
+        { MessageBox.Show(this, "Weather data: https://open-meteo.com/ (CC BY 4.0).", "Weather source"); }
+    }
     private void ResetPosition(object sender, RoutedEventArgs e)
     {
         settings = settings with { Position = null };
@@ -191,6 +273,7 @@ public partial class MainWindow : Window
         if (exiting) return;
         exiting = true;
         monitoring?.Cancel();
+        weatherLifetime.Cancel();
         clock.Stop();
         tray.Visible = false;
         tray.ContextMenuStrip?.Dispose();
@@ -201,6 +284,9 @@ public partial class MainWindow : Window
             try { await monitorTask; } catch (OperationCanceledException) { }
         }
         monitoring?.Dispose();
+        await weatherTask;
+        weather.Dispose();
+        weatherLifetime.Dispose();
         Application.Current.Shutdown();
     }
 }

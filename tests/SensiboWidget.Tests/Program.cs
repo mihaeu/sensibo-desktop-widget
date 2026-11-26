@@ -142,7 +142,9 @@ await using (var stalled = new WaitingStream())
     catch (OperationCanceledException) { timedOut = true; }
     Check(timedOut, "missing heartbeat cancels a stalled read");
 }
+await WeatherChecks.RunAsync(Check);
 Console.WriteLine($"All {checks} checks passed.");
+if (args.Contains("--weather-live")) await WeatherChecks.LiveAsync();
 
 sealed class StubHandler(Func<HttpRequestMessage, HttpResponseMessage> respond) : HttpMessageHandler
 {

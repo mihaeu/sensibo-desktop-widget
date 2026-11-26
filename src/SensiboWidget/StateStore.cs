@@ -7,7 +7,7 @@ using SensiboWidget.Core;
 namespace SensiboWidget;
 
 public sealed record WidgetSettings(string? DeviceId = null, SavedPosition? Position = null,
-    string Theme = "System", int Size = 176);
+    string Theme = "System", int Size = 240);
 
 public sealed class StateStore
 {
@@ -21,7 +21,7 @@ public sealed class StateStore
         try
         {
             var settings = JsonSerializer.Deserialize<WidgetSettings>(File.ReadAllText(file)) ?? new();
-            return settings with { Size = Math.Clamp(settings.Size, 156, 240),
+            return settings with { Size = Math.Clamp(settings.Size, 240, 320),
                 Theme = settings.Theme is "Light" or "Dark" ? settings.Theme : "System" };
         }
         catch (JsonException)

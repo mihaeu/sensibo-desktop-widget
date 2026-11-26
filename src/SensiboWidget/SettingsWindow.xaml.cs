@@ -23,7 +23,7 @@ public partial class SettingsWindow : Window
         Result = settings;
         InitializeComponent();
         ThemeBox.SelectedIndex = settings.Theme switch { "Light" => 1, "Dark" => 2, _ => 0 };
-        SizeBox.SelectedIndex = settings.Size switch { 156 => 0, 208 => 2, 240 => 3, _ => 1 };
+        SizeBox.SelectedIndex = settings.Size switch { 272 => 1, 296 => 2, 320 => 3, _ => 0 };
         StartupBox.IsChecked = StartupRegistration.Enabled;
         KeyBox.Password = demo ? "" : store.LoadKey() ?? "";
         StatusText.Text = store.LoadWarning ?? "Your key is sent only to Sensibo. No readings are stored on disk.";

@@ -27,12 +27,13 @@
       <StackPanel Grid.Column="2">
         <Label Content="Size" Target="{Binding ElementName=SizeBox}" Padding="0,0,0,5" />
         <ComboBox x:Name="SizeBox" Height="30" AutomationProperties.Name="Widget size">
-          <ComboBoxItem Content="Small · 156" Tag="156" /><ComboBoxItem Content="Default · 176" Tag="176" />
-          <ComboBoxItem Content="Large · 208" Tag="208" /><ComboBoxItem Content="Extra large · 240" Tag="240" />
+          <ComboBoxItem Content="Default · 240" Tag="240" /><ComboBoxItem Content="Medium · 272" Tag="272" />
+          <ComboBoxItem Content="Large · 296" Tag="296" /><ComboBoxItem Content="Extra large · 320" Tag="320" />
         </ComboBox>
       </StackPanel>
     </Grid>
     <CheckBox x:Name="StartupBox" Content="Start when I sign in to Windows" Margin="0,18,0,0" />
+    <TextBlock Text="Barcelona weather: outside and forecast every 15 minutes; sea hourly. Model estimates by Open-Meteo (CC BY 4.0)." TextWrapping="Wrap" FontSize="11" Foreground="#5C6964" Margin="0,12,0,0" />
     <TextBlock x:Name="StatusText" TextWrapping="Wrap" MinHeight="40" Margin="0,14,0,10" Foreground="#5C6964"
                AutomationProperties.LiveSetting="Polite" />
     <Grid>

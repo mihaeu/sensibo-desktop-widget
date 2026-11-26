@@ -5,36 +5,37 @@
   </picture>
 </p>
 
-> A small, always-on-top Windows widget showing temperature, humidity, TVOC, and estimated CO₂. The temperature-first layout is 176 × 176 device-independent pixels by default, with rounded corners and light, dark, or system appearance.
+> Your room and Barcelona weather, at a glance. A compact, always-on-top Windows widget with indoor air readings, outdoor and sea temperatures, and a morning, noon, and night forecast.
 
 ## Table of contents
 
-- [Screenshot](#screenshot)
+- [Screenshots](#screenshots)
 - [Requirements](#requirements)
 - [Build and check](#build-and-check)
 - [Install for the current Windows user](#install-for-the-current-windows-user)
 - [First connection](#first-connection)
 - [Use](#use)
 - [Network behavior](#network-behavior)
+- [Barcelona weather](#barcelona-weather)
 - [Code layout](#code-layout)
 - [Uninstall](#uninstall)
 - [Manual acceptance checks](#manual-acceptance-checks)
 - [AI disclosure](#ai-disclosure)
 
-## Screenshot
+## Screenshots
 
 <table>
   <tr>
-    <td align="center" valign="middle"><img src="docs/assets/widget-demo.png" alt="Temperature-first widget showing 20.3 degrees Celsius, 69.3 percent humidity, 519 ppb TVOC, and 967 ppm estimated CO2" width="176" height="176"></td>
-    <td align="center" valign="middle"><img src="docs/assets/settings-demo.png" alt="Configuration view with a masked sample API key, Living room device, dark appearance, default size, and startup enabled" width="420" height="532"></td>
+    <td align="center" valign="middle"><img src="docs/assets/widget-demo.png" alt="Room-first widget showing indoor air readings, Barcelona outside and sea temperatures, and three weather forecasts" width="240" height="240"></td>
+    <td align="center" valign="middle"><img src="docs/assets/settings-demo.png" alt="Configuration view with a masked sample API key, Living room device, dark appearance, default size, and startup enabled" width="420" height="574"></td>
   </tr>
   <tr>
-    <td align="center">Desktop widget — sample readings.</td>
+    <td align="center">Indoor air and Barcelona weather — sample readings.</td>
     <td align="center">Configuration — sample data.</td>
   </tr>
 </table>
 
-Both images are rendered from the native WPF layouts.
+Both images are rendered from the current native WPF layouts with sample data. Alongside the Sensibo readings, the widget pulls in outside temperature, sea surface temperature, and morning/noon/night forecasts for Barcelona. Outside temperature and forecasts refresh every 15 minutes; sea temperature refreshes hourly.
 
 ## Requirements
 
@@ -104,8 +105,8 @@ The app makes read-only API requests. A Sensibo key itself grants account contro
 - Monitor identity and relative position are saved after dragging. Moving between displays accounts for per-monitor DPI; a missing display falls back to the primary monitor.
 - Right-click for Settings, Reconnect, Move to main display, Hide, and Quit.
 - Double-click the tray icon to show a hidden widget. `Esc` hides it; `Shift+F10` opens its menu when it has keyboard focus.
-- Settings offers 156, 176, 208, or 240 logical pixels and System, Light, or Dark appearance.
-- A small amber dot indicates an unavailable connection, an offline device, or a measurement older than 15 minutes. Hover for the timestamp and connection status. Unchanged measurements may legitimately become old; the indicator is conservative, not proof of a sensor fault.
+- The Room first layout is 240 × 240 logical pixels by default. Settings offers 240, 272, 296, or 320 pixels and System, Light, or Dark appearance. Older sizes below 240 are raised to 240 on load; saved position, theme, device, and key are preserved.
+- A small amber dot indicates an unavailable connection, an offline device, an indoor measurement older than 15 minutes, or missing/outdated weather. Hover for timestamps and status. Unchanged indoor measurements may legitimately become old; the indicator is conservative, not proof of a sensor fault.
 - Missing readings show `—`, never a fabricated zero. Air Pro's **eCO₂** is estimated from TVOC, not a direct CO₂ measurement.
 - Always-on-top applies to ordinary desktop windows, not the Windows secure desktop or exclusive full-screen applications.
 
@@ -115,7 +116,7 @@ For a visual preview without an API key:
 .\artifacts\publish\SensiboWidget.exe --demo
 ```
 
-Demo mode shows clearly identified sample readings in its tooltip and tray label. It does not save settings, change startup registration, or contact Sensibo.
+Demo mode shows clearly identified sample room and weather readings in its tooltips and tray label. It does not save settings, change startup registration, or contact Sensibo or the weather services.
 
 ## Network behavior
 
@@ -128,9 +129,26 @@ The app uses the [Sensibo REST API and event stream](https://support.sensibo.com
 - A missing heartbeat triggers reconnection. Failures use increasing delays with jitter, respect `Retry-After`, and retain previous readings with a connection warning.
 - A slow snapshot is attempted between stream retries. Invalid credentials stop retries until Settings or Reconnect is used.
 
+## Barcelona weather
+
+- Outside air temperature and the hourly forecast come from the [Open-Meteo Weather API](https://open-meteo.com/en/docs), using Barcelona city coordinates (41.3874, 2.1686). They refresh every **15 minutes**.
+- Sea surface temperature comes from the [Open-Meteo Marine API](https://open-meteo.com/en/docs/marine-weather-api), using a sea grid cell near the Barcelona coast (41.38, 2.20). It refreshes once an **hour**, independently of the outside temperature. This is a model estimate of surface water, not a reading from a beach thermometer; refreshing does not mean the underlying model updates hourly.
+- Morning, Noon, and Night show today's **08:00, 12:00, and 21:00**, in **Europe/Madrid** time. Earlier periods remain visible until the Barcelona date changes. Hover a forecast to see its date, time, and condition in words. UTC timestamps are converted with daylight-saving rules, independently of the computer's timezone.
+- All temperatures show **°C**. Missing data shows `—`. Failed requests retain previous readings and dim the affected data; tooltips show when values were valid and fetched. Data older than twice its refresh interval is also marked stale. Forecasts from a previous date are never reused as today's forecast.
+- Weather starts independently of the Sensibo connection. Startup fetches both sources once, then follows their separate schedules. Sleep/wake does not replay missed requests. Errors wait until the next scheduled attempt, or longer if the service sends `Retry-After`. Requests time out after 20 seconds and are cancelled on exit.
+- No additional key is required. Weather uses its own HTTPS client, never receives the Sensibo key, and sends only the fixed Barcelona coordinates. Redirects are disabled. Weather responses are kept in memory, not logged or saved.
+
+Weather data by **[Open-Meteo](https://open-meteo.com/)**, licensed under **[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)**; temperatures are rounded for display and weather codes are represented as icons. Attribution is also available in the widget's tooltips, Settings, and right-click menu. The configured free endpoints are for [non-commercial use](https://open-meteo.com/en/terms); commercial deployments need an appropriate service plan. This does not change the project's MIT code license.
+
+The normal build runs offline checks, including refresh schedules, missing values, rate limits, cancellation, midnight, and daylight-saving transitions. To additionally check the real public weather endpoints (no Sensibo account is used):
+
+```powershell
+dotnet run --project tests/SensiboWidget.Tests -c Release --no-build --no-restore -- --weather-live
+```
+
 ## Code layout
 
-- `src/SensiboWidget.Core`: readings, JSON parsing, REST/SSE client, pure monitor-placement calculations.
+- `src/SensiboWidget.Core`: readings, JSON parsing, REST/SSE client, Barcelona weather client and refresh schedules, pure monitor-placement calculations.
 - `src/SensiboWidget`: WPF windows, tray icon, per-monitor Windows integration, encrypted storage, startup registration.
 - `tests/SensiboWidget.Tests`: offline assertions using fake HTTP responses; no real credentials.
 - `scripts`: reproducible build and per-user install/uninstall entry points.
